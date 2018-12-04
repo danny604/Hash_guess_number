@@ -1,0 +1,118 @@
+"""
+    猜数字游戏(数字匹配问题)：
+    1.生成一个N位的秘密数字；
+    2.猜数者输入一长度相同的数字进行猜数，如果相应位置数字相同，标记为：A
+      数字不同，但是秘密数字里面的数字，记为：B；
+    3.如果输入的数值有重复没匹配上的只记 1个 B。
+    作者：Famisi
+    日期：2018/12/4
+    版本：V1.0
+    思路：
+    1）把秘密数字和输入的猜测数字转换成2个list，然后逐个比较对应位是否相等，可以得出‘bulls’个数
+    2）把秘密数字和输入猜数对应位不等的数字作为 key，分别存到 2个 dict 中，并对 key 的值进行计算
+    3）比较 2）中生成的2个dict是否有对应的 key，有的话，取 value 值小的作为‘cows’个数
+
+"""
+
+
+import string
+import random
+import time
+from functools import reduce
+import json
+
+
+# 生成 n 位秘密数字
+def create_secret_number(n):
+    """
+        生成 n 位秘密数据。
+    :param n: 秘密数据位数
+    :return: 若n符合，则返回长度为n的数据list；否则，返回:None
+    """
+    # dec_num_str = '0123456789'
+    if len(n) > 0 and n.isnumeric():
+        n_temp = int(n)
+        dec_num_str = string.digits
+        random.seed(time.time())
+        return list(random.sample(dec_num_str, n_temp))
+    else:
+        print('输入的数字位数:%s 不符合要求' % n)
+        return None
+
+
+# 处理输入的数字字符串
+def process_input_number(str_num):
+    """
+        对输入的数字字符串进行处理
+    :param str_num: 输入的数字字符串
+    :return: 符合要求返回数字字符数字列表；否则，返回：None
+    """
+    # 判断输入的字符串是否为数字字符串
+    if str_num.isnumeric():
+        return list(str_num)
+    else:
+        print('猜测的数字不符合要求！')
+        return None
+
+
+def main():
+    secret_dict = {}
+    guess_dict = {}
+    start = True
+    while 1:
+        total_a = 0
+        total_b = 0
+        secret_dict.clear()
+        guess_dict.clear()
+        if start:
+            start = False
+            print('*'*40)
+            str_num = input('输入将要生成的秘密数字总位数：')
+            input_secret_number = create_secret_number(str_num)
+            if not input_secret_number:
+                return
+            print('生成的 %d 位秘密数成功！' % len(input_secret_number))  # , input_secret_number
+            # 生成的密码写入txt文件中
+            with open('secret.txt', 'wt') as f:
+                json.dump(input_secret_number, f)
+
+        # 输入猜测数
+        input_num_str = input('现在请输入 %d 位猜测的数字：' % len(input_secret_number))
+        input_guess_number = process_input_number(input_num_str)
+        if not input_guess_number:
+            return
+        # 判断输入数字和猜测数字长度是否相等，相等则处理，不等给予提示
+        if len(input_guess_number) == len(input_secret_number):
+            for i in range(len(input_secret_number)):
+                # 计算‘公牛’数量
+                if input_guess_number[i] == input_secret_number[i]:
+                    total_a += 1
+                else:
+                    if input_secret_number[i] in secret_dict:
+                        secret_dict[input_secret_number[i]] += 1
+                    else:
+                        secret_dict[input_secret_number[i]] = 1
+                    if input_guess_number[i] in guess_dict:
+                        guess_dict[input_guess_number[i]] += 1
+                    else:
+                        guess_dict[input_guess_number[i]] = 1
+            for digit in secret_dict:
+                if digit in guess_dict:
+                    total_b += min(secret_dict[digit], guess_dict[digit])
+            print('所猜测的数字符合: %dA%dB' % (total_a, total_b))
+            if total_a == len(input_secret_number):
+                print('恭喜您猜对了!^v^')
+                secret_str = reduce(lambda x, y: x + y, input_secret_number)
+                guess_str = reduce(lambda x, y: x + y, input_guess_number)
+                print('输入的 %d位 数字是：%s' % (len(input_secret_number), secret_str))
+                print('猜测的 %d位 数字是：%s' % (len(input_guess_number), guess_str))
+                start = True
+
+        else:
+            print('所猜测的数字长度和秘密数不相符！')
+
+
+if __name__ == '__main__':
+    main()
+
+
